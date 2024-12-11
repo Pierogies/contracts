@@ -26,8 +26,8 @@ contract PIRGSStaking is Ownable, ReentrancyGuard {
     IBEP20 public immutable rewardToken;
 
     // Staking configurations
-    uint256 public constant MAX_TOTAL_REWARDS = 500_000_000_000 * 10 ** 18; // 500 billion cap
-    uint256 public constant MAX_STAKE_PER_USER = 1_000_000 * 10 ** 18; // 1 million token max stake
+    uint256 public constant MAX_TOTAL_REWARDS = 250_000_000_000 * 10 ** 18; // 250 billion PIRGS
+    uint256 public constant MAX_STAKE_PER_USER = 10_000_000 * 10 ** 18; // 10 million token max stake
     uint256 public totalRewards;
 
     // Structure representing a staking option
