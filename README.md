@@ -52,6 +52,6 @@ Further Information
     Support: If you have questions or need assistance, contact us through Issues.
 
 Events
-
+    [11.12.2024]: Addition of Staking functionality.
     [Date]: Addition of TimeLock functionality.
     [Date]: Addition of MultiSig functionality.
