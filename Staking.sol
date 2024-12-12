@@ -59,9 +59,9 @@ contract PIRGSStaking is Ownable, ReentrancyGuard {
     event RewardFunded(uint256 amount, uint256 totalRewards);
     event RewardsClaimed(address indexed user, uint256 reward);
 
-    constructor(IBEP20 _stakingToken, IBEP20 _rewardToken) {
-        stakingToken = _stakingToken;
-        rewardToken = _rewardToken;
+    constructor(IBEP20 0x04f48dce9337217225E80B00408D35Fa4F6b1727, IBEP20 0x04f48dce9337217225E80B00408D35Fa4F6b1727) {
+        stakingToken = 0x04f48dce9337217225E80B00408D35Fa4F6b1727;
+        rewardToken = 0x04f48dce9337217225E80B00408D35Fa4F6b1727;
 
         // Initial staking options
         stakingOptions.push(StakingOption(30 days, 10, true));    // 1 month - 10% APY
