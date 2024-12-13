@@ -1,0 +1,91 @@
+# MultiStageTimelock Contract
+
+## Overview
+The **MultiStageTimelock** contract is designed for locking BEP-20 tokens and releasing them in two predefined stages. This is ideal for treasury funds, team allocations, or other scenarios where gradual token release is required to build trust and transparency with stakeholders.
+
+## Key Features
+- **Token Compatibility:** Supports any BEP-20 token.
+- **Two-Stage Release:**
+  - 50% of tokens are released after the first predefined timestamp.
+  - The remaining 50% are released after the second predefined timestamp.
+- **Immutable Beneficiary:** Tokens can only be released to the designated beneficiary.
+- **Secure Locking:** Tokens are securely locked and cannot be withdrawn before the predefined timestamps.
+
+## Prerequisites
+- A BEP-20 token contract.
+- Access to a wallet with enough tokens to lock.
+- Familiarity with deploying contracts using tools like Remix or Hardhat.
+
+## Deployment Instructions
+1. Open the **MultiStageTimelock** contract code in Remix or your preferred Solidity development environment.
+2. Set the following parameters in the constructor during deployment:
+   - **`_token:`** Address of the BEP-20 token contract.
+   - **`_beneficiary:`** Address that will receive the tokens.
+   - **`_firstReleaseTime:`** UNIX timestamp for the first release (50% of tokens).
+   - **`_secondReleaseTime:`** UNIX timestamp for the second release (remaining 50%).
+
+   Example:
+   - First release: 2 years from now (UNIX timestamp: `current_timestamp + 2 * 365 * 24 * 60 * 60`).
+   - Second release: 4 years from now (UNIX timestamp: `current_timestamp + 4 * 365 * 24 * 60 * 60`).
+
+3. Deploy the contract using a compatible wallet (e.g., MetaMask).
+
+## Funding the Timelock
+1. Use the BEP-20 token contract's `approve` function to authorize the transfer of tokens to the Timelock contract.
+   - **Spender:** Address of the deployed Timelock contract.
+   - **Amount:** Number of tokens to lock (consider the token's decimals).
+
+   Example:
+   ```solidity
+   approve(timelockAddress, amount);
+   ```
+
+2. Call the `fund` function in the Timelock contract to transfer tokens.
+   - This function must be called by the account that approved the tokens.
+
+   Example:
+   ```solidity
+   fund(amount);
+   ```
+
+## Releasing Tokens
+1. The beneficiary can release tokens by calling the `release` function.
+2. The function checks the current timestamp and releases the appropriate amount:
+   - 50% after the first release time.
+   - Remaining 50% after the second release time.
+
+   Example:
+   ```solidity
+   release();
+   ```
+
+3. If the conditions for token release are not met, the transaction will fail.
+
+## Code Explanation
+### Constructor
+The constructor initializes the contract:
+- Sets the token to lock.
+- Defines the beneficiary.
+- Establishes the two release timestamps.
+
+### `fund`
+Transfers the specified amount of tokens from the caller to the Timelock contract. This must be called after approving the transfer from the token contract.
+
+### `release`
+Handles the two-stage release of tokens. Tokens are released only if the current timestamp exceeds the respective release time, and each stage can only be executed once.
+
+## Example Scenarios
+1. **Team Allocation:**
+   - 50% of tokens are released after 2 years.
+   - Remaining 50% are released after 4 years.
+2. **Treasury Management:**
+   - Lock treasury funds to ensure gradual availability over a specified period.
+
+## Security Considerations
+- Ensure the `beneficiary` address is correct during deployment. It cannot be changed later.
+- The contract should be funded only after deployment to the correct network (e.g., Binance Smart Chain).
+- Use reliable tools to calculate the UNIX timestamps for release times.
+
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.
+
