@@ -10,6 +10,10 @@
 
 **Pierogies (PIRGS)** is a decentralized token based on the Binance Smart Chain (BSC), implementing the BEP-20 standard. The project aims to provide secure and efficient financial management within the Pierogies community.
 
+Our Vision
+
+Pierogies - the most transparent memecoin for investors. All tokens are divided into individual subcontracts and are publicly available.
+
 ### **Key Features**
 - **Standard BEP-20 Functions:**
   - **Transfer and Approve Functions:** Standard BEP-20 methods for managing tokens.
