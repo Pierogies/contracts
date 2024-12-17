@@ -1,83 +1,105 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract Staking {
+contract Staking is ReentrancyGuard, Ownable {
+    using SafeMath for uint256;
+
     IERC20 public token;
-    address public owner;
+    uint256 public constant MAX_TOTAL_REWARDS = 250_000_000_000 * 10**18;
+    uint256 public totalRewardsPaid;
+
+    enum StakeDuration {
+        OneMonth,
+        SixMonths,
+        TwelveMonths
+    }
 
     struct Stake {
         uint256 amount;
         uint256 timestamp;
-        uint256 apy; // Annual Percentage Yield
+        uint256 apy;
+        StakeDuration duration;
     }
 
     mapping(address => Stake[]) public stakes;
 
-    // Constructor
-    constructor(address _tokenAddress) {
-        token = IERC20(_tokenAddress); // Pobiera token z podanego adresu
-        owner = msg.sender; // Set the deployer as the owner
+    constructor(address _tokenAddress) Ownable(msg.sender) {
+        require(_tokenAddress != address(0), "Invalid token address");
+        token = IERC20(_tokenAddress);
     }
 
-    // Get the owner address
-    function getOwner() external view returns (address) {
-        return owner;
-    }
+    function stake(uint256 amount, StakeDuration duration) external nonReentrant {
+        require(amount > 0, "Amount must be greater than 0");
+        
+        require(
+            token.allowance(msg.sender, address(this)) >= amount, 
+            "Insufficient token allowance"
+        );
 
-    // Stake tokens for a specified duration
-    function stake(uint256 _amount, uint256 _duration) external {
-        require(_amount > 0, "Amount must be greater than 0");
-        require(_duration == 1 || _duration == 6 || _duration == 12, "Invalid staking duration");
-
-        // Transfer tokens from user to staking contract
-        bool success = token.transferFrom(msg.sender, address(this), _amount);
-        require(success, "Token transfer failed");
+        require(
+            token.transferFrom(msg.sender, address(this), amount), 
+            "Token transfer failed"
+        );
 
         uint256 apy;
-        if (_duration == 1) {
-            apy = 10; // 10% APY for 1 month
-        } else if (_duration == 6) {
-            apy = 20; // 20% APY for 6 months
-        } else if (_duration == 12) {
-            apy = 30; // 30% APY for 1 year
+        if (duration == StakeDuration.OneMonth) {
+            apy = 10; // 10% APY
+        } else if (duration == StakeDuration.SixMonths) {
+            apy = 20; // 20% APY
+        } else if (duration == StakeDuration.TwelveMonths) {
+            apy = 30; // 30% APY
         }
 
-        // Record the stake
         stakes[msg.sender].push(Stake({
-            amount: _amount,
+            amount: amount,
             timestamp: block.timestamp,
-            apy: apy
+            apy: apy,
+            duration: duration
         }));
     }
 
-    // Calculate rewards for a given stake
     function calculateRewards(Stake memory _stake) internal view returns (uint256) {
-        uint256 stakingPeriod = (block.timestamp - _stake.timestamp) / 30 days; // in months
-        uint256 rewards;
-
-        if (_stake.apy > 0) {
-            rewards = _stake.amount * _stake.apy * stakingPeriod / 100; // simple interest calculation
-        }
-
+        uint256 stakingPeriod = block.timestamp.sub(_stake.timestamp) / 30 days;
+        uint256 rewards = _stake.amount.mul(_stake.apy).mul(stakingPeriod).div(100);
         return rewards;
     }
 
-    // Unstake tokens and claim rewards
-    function unstake(uint256 _stakeIndex) external {
+    function unstake(uint256 _stakeIndex) external nonReentrant {
         require(_stakeIndex < stakes[msg.sender].length, "Invalid stake index");
-
+        
         Stake storage userStake = stakes[msg.sender][_stakeIndex];
         uint256 rewards = calculateRewards(userStake);
-        uint256 totalAmount = userStake.amount + rewards;
+        
+        require(
+            totalRewardsPaid.add(rewards) <= MAX_TOTAL_REWARDS, 
+            "Rewards exceed maximum allocation"
+        );
 
-        // Remove the stake from the stakes list
+        uint256 totalAmount = userStake.amount.add(rewards);
+        totalRewardsPaid = totalRewardsPaid.add(rewards);
+
+        // Replace the unstaked stake with the last one and pop the array
         stakes[msg.sender][_stakeIndex] = stakes[msg.sender][stakes[msg.sender].length - 1];
         stakes[msg.sender].pop();
 
-        // Transfer tokens + rewards back to the user
-        bool success = token.transfer(msg.sender, totalAmount);
-        require(success, "Token transfer failed");
+        require(
+            token.transfer(msg.sender, totalAmount), 
+            "Token transfer failed"
+        );
+    }
+
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
+        IERC20(tokenAddress).transfer(owner(), tokenAmount);
+    }
+
+    function migrateStakes(address[] calldata users, Stake[] calldata userStakes) external onlyOwner {
+        for (uint256 i = 0; i < users.length; i++) {
+            stakes[users[i]].push(userStakes[i]);
+        }
     }
 }
